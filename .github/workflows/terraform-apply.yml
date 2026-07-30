@@ -24,6 +24,13 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
+      - name: 🕵️ Revelar Identidade OIDC (O Segredo está aqui)
+        run: |
+          echo "=========================================================="
+          echo "Copie a linha abaixo e cole na Trust Policy da AWS:"
+          echo "repo:${{ github.repository }}:ref:${{ github.ref }}"
+          echo "=========================================================="
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
