@@ -6,6 +6,7 @@ variable "aws_region" {
 variable "admin_ip" {
   description = "Seu IP pessoal para liberar no Security Group (ex: 203.0.113.10/32)"
   type        = string
+  default     = "187.34.30.192/32"
 }
 
 variable "allow_ips" {
