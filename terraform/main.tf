@@ -1,21 +1,21 @@
-# module "network" {
-#   source = "./modules/network"
-#   region = var.aws_region
-# }
+module "network" {
+  source = "./modules/network"
+  region = var.aws_region
+}
 
-# module "security" {
-#   source   = "./modules/security"
-#   vpc_id   = module.network.vpc_id
-#   vpc_cidr = module.network.vpc_cidr
-#   my_ip    = var.admin_ip
-# }
+module "security" {
+  source   = "./modules/security"
+  vpc_id   = module.network.vpc_id
+  vpc_cidr = module.network.vpc_cidr
+  my_ip    = var.admin_ip
+}
 
-# module "eks_cluster" {
-#   source       = "./modules/eks"
-#   cluster_name = var.eks_cluster_name
-#   allowed_ips  = var.allow_ips
-#   subnet_ids   = [module.network.private_subnet_idA, module.network.private_subnet_idB]
-# }
+module "eks_cluster" {
+  source       = "./modules/eks"
+  cluster_name = var.eks_cluster_name
+  allowed_ips  = var.allow_ips
+  subnet_ids   = [module.network.private_subnet_idA, module.network.private_subnet_idB]
+}
 
 module "ecr_repos" {
   source          = "./modules/ecr"
