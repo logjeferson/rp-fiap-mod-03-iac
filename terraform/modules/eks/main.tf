@@ -1,0 +1,153 @@
+# IAM Role para Control Plane do Cluster
+resource "aws_iam_role" "cluster_role" {
+  name = "${var.cluster_name}-cluster-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = { Service = "eks.amazonaws.com" }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "cluster_policy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+  role       = aws_iam_role.cluster_role.name
+}
+
+# Elastic Kubernetes Service (EKS)
+resource "aws_eks_cluster" "main" {
+  name     = var.cluster_name
+  role_arn = aws_iam_role.cluster_role.arn
+  version  = "1.35"
+
+  vpc_config {
+    subnet_ids              = var.subnet_ids
+    endpoint_private_access = true
+    endpoint_public_access  = true
+    public_access_cidrs     = ["0.0.0.0/0"] ##var.allowed_ips
+  }
+
+access_config {
+    authentication_mode = "API_AND_CONFIG_MAP"
+  }
+
+  depends_on = [aws_iam_role_policy_attachment.cluster_policy]
+}
+
+# IAM Role para Worker Nodes
+resource "aws_iam_role" "node_role" {
+  name = "${var.cluster_name}-node-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+    }]
+  })
+}
+
+# Políticas obrigatórias do EKS
+resource "aws_iam_role_policy_attachment" "node_worker_policy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+  role       = aws_iam_role.node_role.name
+}
+resource "aws_iam_role_policy_attachment" "node_cni_policy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+  role       = aws_iam_role.node_role.name
+}
+resource "aws_iam_role_policy_attachment" "node_ecr_policy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+  role       = aws_iam_role.node_role.name
+}
+
+# Políticas de apoio (SQS e DynamoDB) para suas aplicações
+resource "aws_iam_role_policy_attachment" "node_sqs_policy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSQSFullAccess"
+  role       = aws_iam_role.node_role.name
+}
+resource "aws_iam_role_policy_attachment" "node_dynamodb_policy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+  role       = aws_iam_role.node_role.name
+}
+
+# Node Group
+resource "aws_eks_node_group" "main" {
+  cluster_name    = aws_eks_cluster.main.name
+  node_group_name = "${var.cluster_name}-node-group"
+  node_role_arn   = aws_iam_role.node_role.arn
+  subnet_ids      = var.subnet_ids
+  instance_types  = [var.node_instance_type]
+  ami_type        = "AL2023_x86_64_STANDARD"
+
+  scaling_config {
+    desired_size = 7
+    min_size     = 5
+    max_size     = 9
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.node_worker_policy,
+    aws_iam_role_policy_attachment.node_cni_policy,
+    aws_iam_role_policy_attachment.node_ecr_policy
+  ]
+}
+
+resource "aws_eks_addon" "vpc_cni" {
+  cluster_name = aws_eks_cluster.main.name
+  addon_name   = "vpc-cni"
+  configuration_values = jsonencode({
+    env = {
+      ENABLE_PREFIX_DELEGATION = "true"
+      WARM_PREFIX_TARGET       = "1"
+    }
+  })
+}
+
+# Permissões para o pipeline acessar o cluster EKS
+resource "aws_eks_access_entry" "pipeline_access" {
+  cluster_name  = aws_eks_cluster.main.name
+  principal_arn = "arn:aws:iam::162521700965:role/azure-devops-role"
+  type          = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "pipeline_access_admin" {
+  cluster_name  = aws_eks_cluster.main.name
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  principal_arn = "arn:aws:iam::162521700965:role/azure-devops-role"
+
+  access_scope {
+    type = "cluster"
+  }
+}
+
+# Permissões para meu usuário local acessar o cluster EKS
+resource "aws_eks_access_entry" "my_access" {
+  cluster_name  = aws_eks_cluster.main.name
+  principal_arn = "arn:aws:iam::162521700965:user/logjeferson"
+  type          = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "my_access_admin" {
+  cluster_name  = aws_eks_cluster.main.name
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  principal_arn = "arn:aws:iam::162521700965:user/logjeferson"
+
+  access_scope {
+    type = "cluster"
+  }
+}
+
+# Coleta o certificado do OIDC do EKS para criar o provedor de identidade
+data "tls_certificate" "eks" {
+  url = aws_eks_cluster.main.identity[0].oidc[0].issuer
+}
+
+# Habilita o OIDC para o cluster EKS, permitindo a autenticação de workloads usando IAM Roles for Service Accounts (IRSA)
+resource "aws_iam_openid_connect_provider" "eks" {
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = [data.tls_certificate.eks.certificates[0].sha1_fingerprint]
+  url             = aws_eks_cluster.main.identity[0].oidc[0].issuer
+}
