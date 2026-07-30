@@ -1,0 +1,114 @@
+name: APPLY - FIAP - AWS - TERRAFORM
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_BUCKET_NAME: ${{ vars.AWS_BUCKET_NAME }}
+  TF_VERSION: '1.15.4'
+  TF_WORKING_DIR: 'terraform'
+
+jobs:
+  apply:
+    name: 'APPLY - FIAP - AWS - TERRAFORM'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "================= Terraform Init ================="
+          echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "--------------------------------------------------"
+          terraform init \
+            -backend-config="bucket=${{ env.AWS_BUCKET_NAME }}" \
+            -backend-config="key=iac-general/terraform.tfstate"
+
+      - name: Terraform Validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "=============== Terraform Validate ==============="
+          terraform validate
+
+      - name: Terraform Plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "================= Terraform Plan ================="
+          terraform plan \
+            -var="aws_region=${{ env.AWS_REGION }}" \
+            -var="db_user=${{ secrets.DB_USER }}" \
+            -var="db_pass=${{ secrets.DB_PASS }}"
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main'
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "================ Terraform Apply ================="
+          terraform apply -auto-approve \
+            -var="aws_region=${{ env.AWS_REGION }}" \
+            -var="db_user=${{ secrets.DB_USER }}" \
+            -var="db_pass=${{ secrets.DB_PASS }}"
+
+  destroy:
+    name: 'DESTROY - FIAP - AWS - TERRAFORM'
+    needs: apply
+    runs-on: ubuntu-latest
+    environment: 'DESTROY_APPROVAL'
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "================= Terraform Init ================="
+          terraform init \
+            -backend-config="bucket=${{ env.AWS_BUCKET_NAME }}" \
+            -backend-config="key=iac-general/terraform.tfstate"
+
+      - name: Terraform Destroy
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "=============== Terraform Destroy ==============="
+          terraform destroy -auto-approve \
+            -var="aws_region=${{ env.AWS_REGION }}" \
+            -var="db_user=${{ secrets.DB_USER }}" \
+            -var="db_pass=${{ secrets.DB_PASS }}"
