@@ -1,9 +1,9 @@
-name: APPLY - FIAP - AWS - TERRAFORM
+name: FIAP - MODULO 03 - IAC
 
 on:
-  push:
-    branches:
-      - main
+  # push:
+  #   branches:
+  #     - main
   workflow_dispatch:
 
 env:
@@ -11,16 +11,16 @@ env:
   AWS_BUCKET_NAME: ${{ vars.AWS_BUCKET_NAME }}
   TF_VERSION: '1.15.4'
   TF_WORKING_DIR: 'terraform-modules'
-  EKS_CLUSTER_NAME: 'microservices-cluster-01'
-  EKS_NAMESPACE: 'fiap-microservices'
-  EKS_INGRESS_NAME: 'ingress-microservices'
-  EKS_INGRESS_NAMESPACE: 'ingress-nginx'
-  EKS_CERT_MANAGER_NAMESPACE: 'cert-manager'
-  EKS_KEDA_NAMESPACE: 'keda'
+  EKS_CLUSTER_NAME: 'eks-cluster-01'
+  EKS_NAMESPACE: 'ms-namespace-01'
+  EKS_INGRESS_NAME: 'ms-ingress-01'
+  EKS_INGRESS_NAMESPACE: 'ms-namespace-ingress-01'
+  EKS_CERT_MANAGER_NAMESPACE: 'ms-cert-manager-01'
+  EKS_KEDA_NAMESPACE: 'ms-keda-01'
 
 jobs:
   apply:
-    name: 'APPLY - FIAP - AWS - TERRAFORM'
+    name: 'AWS - TERRAFORM - APPLY'
     runs-on: ubuntu-latest
     environment: 'APPLY_APPROVAL'
     permissions:
@@ -51,6 +51,7 @@ jobs:
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
+          echo "##[section]Initializing Terraform..."
           terraform init \
             -backend-config="bucket=${{ env.AWS_BUCKET_NAME }}" \
             -backend-config="key=iac-general/terraform.tfstate"
@@ -63,6 +64,7 @@ jobs:
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
+          echo "##[section]Validating the Infrastructure..."
           terraform validate
 
       - name: Terraform - Plan
@@ -73,6 +75,7 @@ jobs:
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
+          echo "##[section]Planning the Infrastructure..."
           terraform plan \
             -var="aws_region=${{ env.AWS_REGION }}" \
             -var="db_user=${{ secrets.DB_USER }}" \
@@ -86,6 +89,7 @@ jobs:
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
+          echo "##[section]Applying the Infrastructure..."
           terraform apply -auto-approve \
             -var="aws_region=${{ env.AWS_REGION }}" \
             -var="db_user=${{ secrets.DB_USER }}" \
@@ -100,11 +104,12 @@ jobs:
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
+          echo "##[section]Getting the output values from the Infrastructure..."
           KEDA_ARN=$(terraform output -raw keda_sqs_role_arn)
           echo "KEDA_ARN=$KEDA_ARN" >> $GITHUB_ENV
 
   eks-config:
-    name: 'EKS - CONFIGS'
+    name: 'AWS - EKS-CONFIG'
     needs: apply
     runs-on: ubuntu-latest
     steps:
@@ -130,11 +135,8 @@ jobs:
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
-          echo "Conectando ao Cluster EKS..."
+          echo "##[section]Connecting to the EKS Cluster..."
           aws eks update-kubeconfig --region ${{ vars.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
-
-          echo "Validando o Cluster EKS..."
-          kubectl cluster-info
 
       - name: Install - Metrics Server
         run: |
@@ -143,11 +145,11 @@ jobs:
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
-          echo "Instalando o Metrics Server..."
+          echo "##[section]Installing the Metrics Server..."
           kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
           sleep 10
 
-          echo "Validando o Metrics Server..."
+          echo "##[section]Validating the Metrics Server..."
           kubectl get pods --namespace kube-system
 
       - name: Install - Ingress Nginx
@@ -157,11 +159,11 @@ jobs:
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
-          echo "Instalando o Ingress Nginx..."
+          echo "##[section]Installing the Ingress Nginx..."
           kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/aws/deploy.yaml
           sleep 10
 
-          echo "Aplicando as Regras do Ingress Nginx..."
+          echo "##[section]Applying the Ingress Nginx Rules..."
           kubectl wait --namespace ${{ env.EKS_INGRESS_NAMESPACE }} \
             --for=condition=ready pod \
             --selector=app.kubernetes.io/component=controller \
@@ -169,7 +171,7 @@ jobs:
           kubectl apply -f eks-templates/ingress-rules.yml
           sleep 3
 
-          echo "Validando os Serviços do Ingress Nginx..."
+          echo "##[section]Validating the Ingress Nginx Services..."
           kubectl get service --namespace ${{ env.EKS_INGRESS_NAMESPACE }} ingress-nginx-controller
 
       - name: Install - Cert-Manager
@@ -179,18 +181,18 @@ jobs:
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
-          echo "Instalando o Cert-Manager..."
+          echo "##[section]Installing the Cert-Manager..."
           kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
           sleep 10
 
-          echo "Aplicando as Regras do Cert-Manager..."
+          echo "##[section]Applying Cert-Manager Rules..."
           kubectl wait --namespace ${{ env.EKS_CERT_MANAGER_NAMESPACE }} \
             --for=condition=Available deployment/cert-manager-webhook \
             --timeout=180s
           kubectl apply -f eks-templates/cert-manager-rules.yml
           sleep 3
 
-          echo "Validando os Pods do Cert-Manager..."
+          echo "##[section]Validating the Cert-Manager Pods..."
           kubectl get pods --namespace ${{ env.EKS_CERT_MANAGER_NAMESPACE }}
 
       - name: Install - KEDA
@@ -200,7 +202,7 @@ jobs:
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
-          echo "Instalando o KEDA..."
+          echo "##[section]Installing KEDA..."
           helm repo add kedacore https://kedacore.github.io/charts
           helm repo update
 
@@ -217,21 +219,21 @@ jobs:
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
-          echo "Aguardando o Ingress provisionar o NLB..."
+          echo "##[section]Waiting for the Ingress to provision the NLB..."
           NLB_DNS=""
           while [ -z "$NLB_DNS" ]; do
             NLB_DNS=$(kubectl get ingress ${{ env.EKS_INGRESS_NAME }} --namespace ${{ env.EKS_NAMESPACE }} --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 
             if [ -z "$NLB_DNS" ]; then
-              echo "Aguardando mais 10 segundos..."
+              echo "##[section]Waiting another 10 seconds..."
               sleep 10
             fi
           done
-          echo "Novo NLB Detectado: $NLB_DNS"
+          echo "##[section]New NLB Detected: $NLB_DNS"
 
           cat <<EOF > route53-update.json
           {
-            "Comment": "Atualizacao automatica do NLB via GitHub Actions",
+            "Comment": "Automatic NLB update via GitHub Actions",
             "Changes": [
               {
                 "Action": "UPSERT",
@@ -250,11 +252,11 @@ jobs:
           }
           EOF
 
-          echo "Atualizando Route53..."
+          echo "##[section]Updating Route53..."
           aws route53 change-resource-record-sets --hosted-zone-id ${{ secrets.HOSTED_ZONE_ID }} --change-batch file://route53-update.json
 
   destroy:
-    name: 'DESTROY - FIAP - AWS - TERRAFORM'
+    name: 'AWS - TERRAFORM - DESTROY'
     runs-on: ubuntu-latest
     environment: 'DESTROY_APPROVAL'
     permissions:
@@ -285,6 +287,7 @@ jobs:
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
+          echo "##[section]Initializing Terraform..."
           terraform init \
             -backend-config="bucket=${{ env.AWS_BUCKET_NAME }}" \
             -backend-config="key=iac-general/terraform.tfstate"
@@ -297,6 +300,7 @@ jobs:
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
+          echo "##[section]Destroying the Infrastructure..."
           terraform destroy -auto-approve \
             -var="aws_region=${{ env.AWS_REGION }}" \
             -var="db_user=${{ secrets.DB_USER }}" \
