@@ -13,6 +13,7 @@ env:
   TF_WORKING_DIR: 'terraform-modules'
   EKS_CLUSTER_NAME: 'microservices-cluster-01'
   EKS_NAMESPACE: 'fiap-microservices'
+  EKS_INGRESS_NAME: 'ingress-microservices'
   EKS_INGRESS_NAMESPACE: 'ingress-nginx'
   EKS_CERT_MANAGER_NAMESPACE: 'cert-manager'
   EKS_KEDA_NAMESPACE: 'keda'
@@ -30,21 +31,22 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials
+      - name: Configure - AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Setup Terraform
+      - name: Terraform - Setup
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
-      - name: Terraform Init
+      - name: Terraform - Init
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
+
           echo "================= Terraform Init ================="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
@@ -53,18 +55,20 @@ jobs:
             -backend-config="bucket=${{ env.AWS_BUCKET_NAME }}" \
             -backend-config="key=iac-general/terraform.tfstate"
 
-      - name: Terraform Validate
+      - name: Terraform - Validate
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
+
           echo "=============== Terraform Validate ==============="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
           terraform validate
 
-      - name: Terraform Plan
+      - name: Terraform - Plan
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
+
           echo "================= Terraform Plan ================="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
@@ -74,9 +78,10 @@ jobs:
             -var="db_user=${{ secrets.DB_USER }}" \
             -var="db_pass=${{ secrets.DB_PASS }}"
 
-      - name: Terraform Apply
+      - name: Terraform - Apply
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
+
           echo "================ Terraform Apply ================="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
@@ -86,10 +91,11 @@ jobs:
             -var="db_user=${{ secrets.DB_USER }}" \
             -var="db_pass=${{ secrets.DB_PASS }}"
 
-      - name: Terraform Outputs
+      - name: Terraform - Outputs
         id: tf-outputs
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
+
           echo "=============== Terraform Outputs ================"
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
@@ -105,22 +111,37 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials
+      - name: Configure - AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Install - Metrics Server
+      - name: Setup - EKS Cluster
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Connect - EKS Cluster
         run: |
-          echo "============ Install - Metrics Server ============"
+
+          echo "============= Connect - EKS Cluster =============="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
           echo "Conectando ao Cluster EKS..."
           aws eks update-kubeconfig --region ${{ vars.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
-          sleep 3
+
+          echo "Validando o Cluster EKS..."
+          kubectl cluster-info
+
+      - name: Install - Metrics Server
+        run: |
+
+          echo "============ Install - Metrics Server ============"
+          echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "--------------------------------------------------"
 
           echo "Instalando o Metrics Server..."
           kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
@@ -131,13 +152,10 @@ jobs:
 
       - name: Install - Ingress Nginx
         run: |
+
           echo "============ Install - Ingress Nginx ============="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
-
-          echo "Conectando ao Cluster EKS..."
-          aws eks update-kubeconfig --region ${{ vars.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
-          sleep 3
 
           echo "Instalando o Ingress Nginx..."
           kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/aws/deploy.yaml
@@ -156,13 +174,10 @@ jobs:
 
       - name: Install - Cert-Manager
         run: |
+
           echo "============= Install - Cert-Manager ============="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
-
-          echo "Conectando ao Cluster EKS..."
-          aws eks update-kubeconfig --region ${{ vars.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
-          sleep 3
 
           echo "Instalando o Cert-Manager..."
           kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
@@ -180,19 +195,14 @@ jobs:
 
       - name: Install - KEDA
         run: |
+
           echo "================= Install - KEDA ================="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
-          echo "Conectando ao Cluster EKS..."
-          aws eks update-kubeconfig --region ${{ vars.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
-          sleep 3
-
           echo "Instalando o KEDA..."
           helm repo add kedacore https://kedacore.github.io/charts
           helm repo update
-
-          KEDA_ROLE_ARN="${{ secrets.AWS_KEDA_ROLE_ARN }}" 
 
           helm install keda kedacore/keda \
             --create-namespace \
@@ -200,9 +210,51 @@ jobs:
             --set serviceAccount.operator.annotations."eks\.amazonaws\.com/role-arn"="${{ env.KEDA_ARN }}" \
             --set serviceAccount.metricServer.annotations."eks\.amazonaws\.com/role-arn"="${{ env.KEDA_ARN }}"
 
+      - name: Route53 - Update
+        run: |
+
+          echo "================= Update Route53 ================="
+          echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "--------------------------------------------------"
+
+          echo "Aguardando o Ingress provisionar o NLB..."
+          NLB_DNS=""
+          while [ -z "$NLB_DNS" ]; do
+            NLB_DNS=$(kubectl get ingress ${{ env.EKS_INGRESS_NAME }} --namespace ${{ env.EKS_NAMESPACE }} --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+
+            if [ -z "$NLB_DNS" ]; then
+              echo "Aguardando mais 10 segundos..."
+              sleep 10
+            fi
+          done
+          echo "Novo NLB Detectado: $NLB_DNS"
+
+          cat <<EOF > route53-update.json
+          {
+            "Comment": "Atualizacao automatica do NLB via GitHub Actions",
+            "Changes": [
+              {
+                "Action": "UPSERT",
+                "ResourceRecordSet": {
+                  "Name": "$DOMAIN_NAME",
+                  "Type": "CNAME",
+                  "TTL": 60,
+                  "ResourceRecords": [
+                    {
+                      "Value": "$NLB_DNS"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+          EOF
+
+          echo "Atualizando Route53..."
+          aws route53 change-resource-record-sets --hosted-zone-id ${{ secrets.HOSTED_ZONE_ID }} --change-batch file://route53-update.json
+
   destroy:
     name: 'DESTROY - FIAP - AWS - TERRAFORM'
-    needs: eks-config
     runs-on: ubuntu-latest
     environment: 'DESTROY_APPROVAL'
     permissions:
@@ -213,7 +265,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials
+      - name: Configure - AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -225,9 +277,10 @@ jobs:
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
-      - name: Terraform Init
+      - name: Terraform - Init
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
+
           echo "================= Terraform Init ================="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
@@ -236,9 +289,10 @@ jobs:
             -backend-config="bucket=${{ env.AWS_BUCKET_NAME }}" \
             -backend-config="key=iac-general/terraform.tfstate"
 
-      - name: Terraform Destroy
+      - name: Terraform - Destroy
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
+
           echo "=============== Terraform Destroy ==============="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"

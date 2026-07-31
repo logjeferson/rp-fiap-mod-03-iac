@@ -20,7 +20,7 @@ resource "aws_iam_role_policy_attachment" "cluster_policy" {
 resource "aws_eks_cluster" "main" {
   name     = var.cluster_name
   role_arn = aws_iam_role.cluster_role.arn
-  version  = "1.35"
+  version  = "1.36"
 
   vpc_config {
     subnet_ids              = var.subnet_ids
@@ -106,17 +106,17 @@ resource "aws_eks_addon" "vpc_cni" {
   })
 }
 
-# Permissões para o pipeline acessar o cluster EKS
-resource "aws_eks_access_entry" "pipeline_access" {
+# Permissões para o pipeline do GitHub Actions acessar o cluster EKS
+resource "aws_eks_access_entry" "github_pipeline_access" {
   cluster_name  = aws_eks_cluster.main.name
-  principal_arn = "arn:aws:iam::162521700965:role/azure-devops-role"
+  principal_arn = "arn:aws:iam::162521700965:user/svc-github-actions"
   type          = "STANDARD"
 }
 
-resource "aws_eks_access_policy_association" "pipeline_access_admin" {
+resource "aws_eks_access_policy_association" "github_pipeline_access_admin" {
   cluster_name  = aws_eks_cluster.main.name
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-  principal_arn = "arn:aws:iam::162521700965:role/azure-devops-role"
+  principal_arn = "arn:aws:iam::162521700965:user/svc-github-actions"
 
   access_scope {
     type = "cluster"
