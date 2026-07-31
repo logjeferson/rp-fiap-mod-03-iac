@@ -11,12 +11,6 @@ env:
   AWS_BUCKET_NAME: ${{ vars.AWS_BUCKET_NAME }}
   TF_VERSION: '1.15.4'
   TF_WORKING_DIR: 'terraform-modules'
-  EKS_CLUSTER_NAME: 'eks-cluster-01'
-  EKS_NAMESPACE: 'ms-namespace-01'
-  EKS_INGRESS_NAME: 'ms-ingress-01'
-  EKS_INGRESS_NAMESPACE: 'ms-namespace-ingress-01'
-  EKS_CERT_MANAGER_NAMESPACE: 'ms-cert-manager-01'
-  EKS_KEDA_NAMESPACE: 'ms-keda-01'
 
 jobs:
   apply:
@@ -31,7 +25,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Configure - AWS Credentials
+      - name: AWS Credentials - Configure
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -112,25 +106,31 @@ jobs:
     name: 'AWS - EKS-CONFIG'
     needs: apply
     runs-on: ubuntu-latest
+    env:
+      EKS_CLUSTER_NAME: 'eks-cluster-01'
+      EKS_NAMESPACE: 'ms-namespace-01'
+      EKS_INGRESS_NAME: 'ms-ingress-01'
+      EKS_INGRESS_NAMESPACE: 'ms-namespace-ingress-01'
+      EKS_CERT_MANAGER_NAMESPACE: 'ms-cert-manager-01'
+      EKS_KEDA_NAMESPACE: 'ms-keda-01'
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Configure - AWS Credentials
+      - name: AWS Credentials - Configure
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Setup - EKS Cluster
+      - name: EKS Cluster - Setup
         uses: azure/setup-kubectl@v3
         with:
           version: 'latest'
 
-      - name: Connect - EKS Cluster
+      - name: EKS Cluster - Connect
         run: |
-
           echo "============= Connect - EKS Cluster =============="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
@@ -138,9 +138,8 @@ jobs:
           echo "##[section]Connecting to the EKS Cluster..."
           aws eks update-kubeconfig --region ${{ vars.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
 
-      - name: Install - Metrics Server
+      - name: Metrics Server - Install
         run: |
-
           echo "============ Install - Metrics Server ============"
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
@@ -152,9 +151,8 @@ jobs:
           echo "##[section]Validating the Metrics Server..."
           kubectl get pods --namespace kube-system
 
-      - name: Install - Ingress Nginx
+      - name: Ingress Nginx - Install
         run: |
-
           echo "============ Install - Ingress Nginx ============="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
@@ -174,9 +172,8 @@ jobs:
           echo "##[section]Validating the Ingress Nginx Services..."
           kubectl get service --namespace ${{ env.EKS_INGRESS_NAMESPACE }} ingress-nginx-controller
 
-      - name: Install - Cert-Manager
+      - name: Cert-Manager - Install
         run: |
-
           echo "============= Install - Cert-Manager ============="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
@@ -195,9 +192,8 @@ jobs:
           echo "##[section]Validating the Cert-Manager Pods..."
           kubectl get pods --namespace ${{ env.EKS_CERT_MANAGER_NAMESPACE }}
 
-      - name: Install - KEDA
+      - name: KEDA - Install
         run: |
-
           echo "================= Install - KEDA ================="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
@@ -214,7 +210,6 @@ jobs:
 
       - name: Route53 - Update
         run: |
-
           echo "================= Update Route53 ================="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
@@ -267,14 +262,14 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Configure - AWS Credentials
+      - name: AWS Credentials - Configure
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Setup Terraform
+      - name: Terraform - Setup
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
@@ -282,7 +277,6 @@ jobs:
       - name: Terraform - Init
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-
           echo "================= Terraform Init ================="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
@@ -295,7 +289,6 @@ jobs:
       - name: Terraform - Destroy
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-
           echo "=============== Terraform Destroy ==============="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
