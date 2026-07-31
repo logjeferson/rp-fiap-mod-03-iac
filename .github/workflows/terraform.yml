@@ -40,8 +40,7 @@ jobs:
       - name: Terraform - Init
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-
-          echo "================= Terraform Init ================="
+          echo "================ Terraform - Init ================"
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
@@ -53,8 +52,7 @@ jobs:
       - name: Terraform - Validate
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-
-          echo "=============== Terraform Validate ==============="
+          echo "============== Terraform - Validate =============="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
@@ -64,8 +62,7 @@ jobs:
       - name: Terraform - Plan
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-
-          echo "================= Terraform Plan ================="
+          echo "================ Terraform - Plan ================"
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
@@ -78,8 +75,7 @@ jobs:
       - name: Terraform - Apply
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-
-          echo "================ Terraform Apply ================="
+          echo "=============== Terraform - Apply ================"
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
@@ -93,8 +89,7 @@ jobs:
         id: tf-outputs
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-
-          echo "=============== Terraform Outputs ================"
+          echo "============== Terraform - Outputs ==============="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
@@ -108,11 +103,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       EKS_CLUSTER_NAME: 'eks-cluster-01'
-      EKS_NAMESPACE: 'ms-namespace-01'
-      EKS_INGRESS_NAME: 'ms-ingress-01'
-      EKS_INGRESS_NAMESPACE: 'ms-namespace-ingress-01'
-      EKS_CERT_MANAGER_NAMESPACE: 'ms-cert-manager-01'
-      EKS_KEDA_NAMESPACE: 'ms-keda-01'
+      EKS_NAMESPACE: 'eks-namespace-01'
+      EKS_INGRESS_NAME: 'eks-ingress-01'
+      EKS_INGRESS_NAMESPACE: 'eks-ingress-namespace-01'
+      EKS_CERT_MANAGER_NAMESPACE: 'eks-cert-manager-namespace-01'
+      EKS_KEDA_NAMESPACE: 'eks-keda-namespace-01'
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -131,7 +126,7 @@ jobs:
 
       - name: EKS Cluster - Connect
         run: |
-          echo "============= Connect - EKS Cluster =============="
+          echo "============= EKS Cluster - Connect =============="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
@@ -140,7 +135,7 @@ jobs:
 
       - name: Metrics Server - Install
         run: |
-          echo "============ Install - Metrics Server ============"
+          echo "============ Metrics Server - Install ============"
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
@@ -153,7 +148,7 @@ jobs:
 
       - name: Ingress Nginx - Install
         run: |
-          echo "============ Install - Ingress Nginx ============="
+          echo "============ Ingress Nginx - Install ============="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
@@ -174,7 +169,7 @@ jobs:
 
       - name: Cert-Manager - Install
         run: |
-          echo "============= Install - Cert-Manager ============="
+          echo "============= Cert-Manager - Install ============="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
@@ -194,7 +189,7 @@ jobs:
 
       - name: KEDA - Install
         run: |
-          echo "================= Install - KEDA ================="
+          echo "================= KEDA - Install ================="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
@@ -210,7 +205,7 @@ jobs:
 
       - name: Route53 - Update
         run: |
-          echo "================= Update Route53 ================="
+          echo "================ Route53 - Update ================"
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
@@ -277,7 +272,7 @@ jobs:
       - name: Terraform - Init
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-          echo "================= Terraform Init ================="
+          echo "================ Terraform - Init ================"
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
@@ -289,7 +284,7 @@ jobs:
       - name: Terraform - Destroy
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-          echo "=============== Terraform Destroy ==============="
+          echo "============== Terraform - Destroy ==============="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
