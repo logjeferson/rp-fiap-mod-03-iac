@@ -10,12 +10,18 @@ env:
   AWS_REGION: ${{ vars.AWS_REGION }}
   AWS_BUCKET_NAME: ${{ vars.AWS_BUCKET_NAME }}
   TF_VERSION: '1.15.4'
-  TF_WORKING_DIR: 'terraform'
+  TF_WORKING_DIR: 'terraform-modules'
+  EKS_CLUSTER_NAME: 'microservices-cluster-01'
+  EKS_NAMESPACE: 'fiap-microservices'
+  EKS_INGRESS_NAMESPACE: 'ingress-nginx'
+  EKS_CERT_MANAGER_NAMESPACE: 'cert-manager'
+  EKS_KEDA_NAMESPACE: 'keda'
 
 jobs:
   apply:
     name: 'APPLY - FIAP - AWS - TERRAFORM'
     runs-on: ubuntu-latest
+    environment: 'APPLY_APPROVAL'
     permissions:
       id-token: write
       contents: read
@@ -42,6 +48,7 @@ jobs:
           echo "================= Terraform Init ================="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
+
           terraform init \
             -backend-config="bucket=${{ env.AWS_BUCKET_NAME }}" \
             -backend-config="key=iac-general/terraform.tfstate"
@@ -50,30 +57,152 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           echo "=============== Terraform Validate ==============="
+          echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "--------------------------------------------------"
+
           terraform validate
 
       - name: Terraform Plan
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           echo "================= Terraform Plan ================="
+          echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "--------------------------------------------------"
+
           terraform plan \
             -var="aws_region=${{ env.AWS_REGION }}" \
             -var="db_user=${{ secrets.DB_USER }}" \
             -var="db_pass=${{ secrets.DB_PASS }}"
 
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main'
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           echo "================ Terraform Apply ================="
+          echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "--------------------------------------------------"
+
           terraform apply -auto-approve \
             -var="aws_region=${{ env.AWS_REGION }}" \
             -var="db_user=${{ secrets.DB_USER }}" \
             -var="db_pass=${{ secrets.DB_PASS }}"
 
+      - name: Terraform Outputs
+        id: tf-outputs
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "=============== Terraform Outputs ================"
+          echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "--------------------------------------------------"
+
+          KEDA_ARN=$(terraform output -raw keda_sqs_role_arn)
+          echo "KEDA_ARN=$KEDA_ARN" >> $GITHUB_ENV
+
+  eks-config:
+    name: 'EKS - CONFIGS'
+    needs: apply
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Install - Metrics Server
+        run: |
+          echo "============ Install - Metrics Server ============"
+          echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "--------------------------------------------------"
+
+          echo "Conectando ao Cluster EKS..."
+          aws eks update-kubeconfig --region ${{ vars.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+          sleep 3
+
+          echo "Instalando o Metrics Server..."
+          kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+          sleep 10
+
+          echo "Validando o Metrics Server..."
+          kubectl get pods --namespace kube-system
+
+      - name: Install - Ingress Nginx
+        run: |
+          echo "============ Install - Ingress Nginx ============="
+          echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "--------------------------------------------------"
+
+          echo "Conectando ao Cluster EKS..."
+          aws eks update-kubeconfig --region ${{ vars.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+          sleep 3
+
+          echo "Instalando o Ingress Nginx..."
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/aws/deploy.yaml
+          sleep 10
+
+          echo "Aplicando as Regras do Ingress Nginx..."
+          kubectl wait --namespace ${{ env.EKS_INGRESS_NAMESPACE }} \
+            --for=condition=ready pod \
+            --selector=app.kubernetes.io/component=controller \
+            --timeout=180s
+          kubectl apply -f eks-templates/ingress-rules.yml
+          sleep 3
+
+          echo "Validando os Serviços do Ingress Nginx..."
+          kubectl get service --namespace ${{ env.EKS_INGRESS_NAMESPACE }} ingress-nginx-controller
+
+      - name: Install - Cert-Manager
+        run: |
+          echo "============= Install - Cert-Manager ============="
+          echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "--------------------------------------------------"
+
+          echo "Conectando ao Cluster EKS..."
+          aws eks update-kubeconfig --region ${{ vars.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+          sleep 3
+
+          echo "Instalando o Cert-Manager..."
+          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
+          sleep 10
+
+          echo "Aplicando as Regras do Cert-Manager..."
+          kubectl wait --namespace ${{ env.EKS_CERT_MANAGER_NAMESPACE }} \
+            --for=condition=Available deployment/cert-manager-webhook \
+            --timeout=180s
+          kubectl apply -f eks-templates/cert-manager-rules.yml
+          sleep 3
+
+          echo "Validando os Pods do Cert-Manager..."
+          kubectl get pods --namespace ${{ env.EKS_CERT_MANAGER_NAMESPACE }}
+
+      - name: Install - KEDA
+        run: |
+          echo "================= Install - KEDA ================="
+          echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "--------------------------------------------------"
+
+          echo "Conectando ao Cluster EKS..."
+          aws eks update-kubeconfig --region ${{ vars.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+          sleep 3
+
+          echo "Instalando o KEDA..."
+          helm repo add kedacore https://kedacore.github.io/charts
+          helm repo update
+
+          KEDA_ROLE_ARN="${{ secrets.AWS_KEDA_ROLE_ARN }}" 
+
+          helm install keda kedacore/keda \
+            --create-namespace \
+            --namespace ${{ env.EKS_KEDA_NAMESPACE }} \
+            --set serviceAccount.operator.annotations."eks\.amazonaws\.com/role-arn"="${{ env.KEDA_ARN }}" \
+            --set serviceAccount.metricServer.annotations."eks\.amazonaws\.com/role-arn"="${{ env.KEDA_ARN }}"
+
   destroy:
     name: 'DESTROY - FIAP - AWS - TERRAFORM'
-    needs: apply
+    needs: eks-config
     runs-on: ubuntu-latest
     environment: 'DESTROY_APPROVAL'
     permissions:
@@ -100,6 +229,9 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           echo "================= Terraform Init ================="
+          echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "--------------------------------------------------"
+
           terraform init \
             -backend-config="bucket=${{ env.AWS_BUCKET_NAME }}" \
             -backend-config="key=iac-general/terraform.tfstate"
@@ -108,6 +240,9 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           echo "=============== Terraform Destroy ==============="
+          echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "--------------------------------------------------"
+
           terraform destroy -auto-approve \
             -var="aws_region=${{ env.AWS_REGION }}" \
             -var="db_user=${{ secrets.DB_USER }}" \

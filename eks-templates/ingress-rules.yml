@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "fiap-microservices"
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: "ingress-microservices"
+  namespace: "fiap-microservices"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  tls:
+    - hosts:
+      - "apis.mysandbox.com.br"
+      secretName: apis-tls-secret
+  ingressClassName: nginx
+  rules:
+    - host: "apis.mysandbox.com.br"
+      http:
+        paths:
+          # --- ROTA DO AUTH SERVICE ---
+          - path: /auth(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 8001
+
+          # --- ROTA DO FLAG SERVICE ---
+          - path: /flags(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: flag-service
+                port:
+                  number: 8002
+
+          # --- ROTA DO TARGETING SERVICE ---
+          - path: /targeting(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: targeting-service
+                port:
+                  number: 8003
+                  
+          # --- ROTA DO EVALUATION SERVICE ---
+          - path: /evaluation(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: evaluation-service
+                port:
+                  number: 8004
+
+          # --- ROTA DO ANALYTICS SERVICE ---
+          - path: /analytics(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: analytics-service
+                port:
+                  number: 8005
