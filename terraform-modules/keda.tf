@@ -8,12 +8,12 @@ resource "helm_release" "keda" {
 
   set {
     name  = "serviceAccount.operator.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = aws_iam_role.keda_role.arn
+    value = module.sqs_queue.keda_sqs_role_arn
   }
 
   set {
     name  = "serviceAccount.metricServer.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = aws_iam_role.keda_role.arn
+    value = module.sqs_queue.keda_sqs_role_arn
     
   }
 }
