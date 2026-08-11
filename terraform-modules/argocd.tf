@@ -18,7 +18,7 @@ resource "helm_release" "argocd" {
 
   set {
     name  = "server.ingress.hosts[0]"
-    value = "argocd.meudominio.com"
+    value = "argocd.mysandbox.com.br"
   }
 
   set {
