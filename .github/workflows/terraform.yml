@@ -1,14 +1,12 @@
 name: FIAP - MODULO 03 - IAC
 
 on:
-  # push:
-  #   branches:
-  #     - main
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 env:
-  AWS_REGION: ${{ vars.AWS_REGION }}
-  AWS_BUCKET_NAME: ${{ vars.AWS_BUCKET_NAME }}
   TF_VERSION: '1.15.4'
   TF_WORKING_DIR: 'terraform-modules'
 
@@ -30,7 +28,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Terraform - Setup
         uses: hashicorp/setup-terraform@v3
@@ -46,7 +44,7 @@ jobs:
 
           echo "##[section]Initializing Terraform..."
           terraform init \
-            -backend-config="bucket=${{ env.AWS_BUCKET_NAME }}" \
+            -backend-config="bucket=${{ vars.AWS_BUCKET_NAME }}" \
             -backend-config="key=iac-general/terraform.tfstate"
 
       - name: Terraform - Validate
@@ -68,7 +66,7 @@ jobs:
 
           echo "##[section]Planning the Infrastructure..."
           terraform plan \
-            -var="aws_region=${{ env.AWS_REGION }}" \
+            -var="aws_region=${{ vars.AWS_REGION }}" \
             -var="db_user=${{ secrets.DB_USER }}" \
             -var="db_pass=${{ secrets.DB_PASS }}"
 
@@ -81,7 +79,7 @@ jobs:
 
           echo "##[section]Applying the Infrastructure..."
           terraform apply -auto-approve \
-            -var="aws_region=${{ env.AWS_REGION }}" \
+            -var="aws_region=${{ vars.AWS_REGION }}" \
             -var="db_user=${{ secrets.DB_USER }}" \
             -var="db_pass=${{ secrets.DB_PASS }}"
 
@@ -103,11 +101,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       EKS_CLUSTER_NAME: 'eks-cluster-01'
-      EKS_NAMESPACE: 'eks-namespace-01'
-      EKS_INGRESS_NAME: 'eks-ingress-01'
-      EKS_INGRESS_NAMESPACE: 'eks-ingress-namespace-01'
-      EKS_CERT_MANAGER_NAMESPACE: 'eks-cert-manager-namespace-01'
-      EKS_KEDA_NAMESPACE: 'eks-keda-namespace-01'
+      EKS_NAMESPACE: 'eks-namespace'
+      EKS_INGRESS_NAME: 'eks-ingress'
+      EKS_INGRESS_NAMESPACE: 'eks-ingress-namespace'
+      EKS_CERT_MANAGER_NAMESPACE: 'eks-cert-manager-namespace'
+      EKS_KEDA_NAMESPACE: 'eks-keda-namespace'
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -262,7 +260,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Terraform - Setup
         uses: hashicorp/setup-terraform@v3
@@ -278,7 +276,7 @@ jobs:
 
           echo "##[section]Initializing Terraform..."
           terraform init \
-            -backend-config="bucket=${{ env.AWS_BUCKET_NAME }}" \
+            -backend-config="bucket=${{ vars.AWS_BUCKET_NAME }}" \
             -backend-config="key=iac-general/terraform.tfstate"
 
       - name: Terraform - Destroy
@@ -290,6 +288,6 @@ jobs:
 
           echo "##[section]Destroying the Infrastructure..."
           terraform destroy -auto-approve \
-            -var="aws_region=${{ env.AWS_REGION }}" \
+            -var="aws_region=${{ vars.AWS_REGION }}" \
             -var="db_user=${{ secrets.DB_USER }}" \
             -var="db_pass=${{ secrets.DB_PASS }}"
