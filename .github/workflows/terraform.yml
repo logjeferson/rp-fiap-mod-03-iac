@@ -83,18 +83,6 @@ jobs:
             -var="db_user=${{ secrets.DB_USER }}" \
             -var="db_pass=${{ secrets.DB_PASS }}"
 
-      - name: Terraform - Outputs
-        id: tf-outputs
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        run: |
-          echo "============== Terraform - Outputs ==============="
-          echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
-          echo "--------------------------------------------------"
-
-          echo "##[section]Getting the output values from the Infrastructure..."
-          KEDA_ARN=$(terraform output -raw keda_sqs_role_arn)
-          echo "KEDA_ARN=$KEDA_ARN" >> $GITHUB_ENV
-
   eks-config:
     name: 'AWS - EKS-CONFIG'
     needs: apply
@@ -103,9 +91,8 @@ jobs:
       EKS_CLUSTER_NAME: 'eks-cluster-01'
       EKS_NAMESPACE: 'eks-namespace'
       EKS_INGRESS_NAME: 'eks-ingress'
-      EKS_INGRESS_NAMESPACE: 'ingress-nginx'
+      EKS_INGRESS_NAMESPACE: 'eks-ingress-namespace'
       EKS_CERT_MANAGER_NAMESPACE: 'eks-cert-manager-namespace'
-      EKS_KEDA_NAMESPACE: 'eks-keda-namespace'
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -131,28 +118,11 @@ jobs:
           echo "##[section]Connecting to the EKS Cluster..."
           aws eks update-kubeconfig --region ${{ vars.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
 
-      - name: Metrics Server - Install
+      - name: Ingress Nginx - Apply Rules
         run: |
-          echo "============ Metrics Server - Install ============"
+          echo "================= Ingress Nginx =================="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
-
-          echo "##[section]Installing the Metrics Server..."
-          kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-          sleep 10
-
-          echo "##[section]Validating the Metrics Server..."
-          kubectl get pods --namespace kube-system
-
-      - name: Ingress Nginx - Install
-        run: |
-          echo "============ Ingress Nginx - Install ============="
-          echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
-          echo "--------------------------------------------------"
-
-          echo "##[section]Installing the Ingress Nginx..."
-          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/aws/deploy.yaml
-          sleep 10
 
           echo "##[section]Applying the Ingress Nginx Rules..."
           kubectl wait --namespace ${{ env.EKS_INGRESS_NAMESPACE }} \
@@ -165,15 +135,11 @@ jobs:
           echo "##[section]Validating the Ingress Nginx Services..."
           kubectl get service --namespace ${{ env.EKS_INGRESS_NAMESPACE }} ingress-nginx-controller
 
-      - name: Cert-Manager - Install
+      - name: Cert-Manager - Apply Rules
         run: |
-          echo "============= Cert-Manager - Install ============="
+          echo "================== Cert-Manager =================="
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
-
-          echo "##[section]Installing the Cert-Manager..."
-          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
-          sleep 10
 
           echo "##[section]Applying Cert-Manager Rules..."
           kubectl wait --namespace ${{ env.EKS_CERT_MANAGER_NAMESPACE }} \
@@ -184,22 +150,6 @@ jobs:
 
           echo "##[section]Validating the Cert-Manager Pods..."
           kubectl get pods --namespace ${{ env.EKS_CERT_MANAGER_NAMESPACE }}
-
-      - name: KEDA - Install
-        run: |
-          echo "================= KEDA - Install ================="
-          echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
-          echo "--------------------------------------------------"
-
-          echo "##[section]Installing KEDA..."
-          helm repo add kedacore https://kedacore.github.io/charts
-          helm repo update
-
-          helm install keda kedacore/keda \
-            --create-namespace \
-            --namespace ${{ env.EKS_KEDA_NAMESPACE }} \
-            --set serviceAccount.operator.annotations."eks\.amazonaws\.com/role-arn"="${{ env.KEDA_ARN }}" \
-            --set serviceAccount.metricServer.annotations."eks\.amazonaws\.com/role-arn"="${{ env.KEDA_ARN }}"
 
       - name: Route53 - Update
         run: |
