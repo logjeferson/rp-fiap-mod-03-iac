@@ -17,6 +17,15 @@ resource "helm_release" "argocd" {
         }
         extraArgs = ["--insecure"]
       }
+      controller = {
+        clusterResourceWhitelist = [
+          {
+            group = "*"
+            kind  = "*"
+          }
+        ]
+      }
+      extraNamespaces = ["eks-namespace"]
     })
   ]
 }
