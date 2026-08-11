@@ -157,10 +157,10 @@ jobs:
           echo "Date/Time: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "--------------------------------------------------"
 
-          echo "##[section]Waiting for the Ingress to provision the NLB..."
+          echo "##[section]Waiting for the NGINX Service to provision the NLB..."
           NLB_DNS=""
           while [ -z "$NLB_DNS" ]; do
-            NLB_DNS=$(kubectl get ingress ${{ env.EKS_INGRESS_NAME }} --namespace ${{ env.EKS_NAMESPACE }} --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+            NLB_DNS=$(kubectl get svc ingress-nginx-controller --namespace ${{ env.EKS_INGRESS_NAMESPACE }} --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 
             if [ -z "$NLB_DNS" ]; then
               echo "##[section]Waiting another 10 seconds..."
@@ -176,7 +176,20 @@ jobs:
               {
                 "Action": "UPSERT",
                 "ResourceRecordSet": {
-                  "Name": "$DOMAIN_NAME",
+                  "Name": "${{ vars.APIS_DOMAIN_NAME }}",
+                  "Type": "CNAME",
+                  "TTL": 60,
+                  "ResourceRecords": [
+                    {
+                      "Value": "$NLB_DNS"
+                    }
+                  ]
+                }
+              },
+              {
+                "Action": "UPSERT",
+                "ResourceRecordSet": {
+                  "Name": "${{ vars.ARGOCD_DOMAIN_NAME }}",
                   "Type": "CNAME",
                   "TTL": 60,
                   "ResourceRecords": [
