@@ -103,7 +103,7 @@ jobs:
       EKS_CLUSTER_NAME: 'eks-cluster-01'
       EKS_NAMESPACE: 'eks-namespace'
       EKS_INGRESS_NAME: 'eks-ingress'
-      EKS_INGRESS_NAMESPACE: 'eks-ingress-namespace'
+      EKS_INGRESS_NAMESPACE: 'ingress-nginx'
       EKS_CERT_MANAGER_NAMESPACE: 'eks-cert-manager-namespace'
       EKS_KEDA_NAMESPACE: 'eks-keda-namespace'
     steps:
