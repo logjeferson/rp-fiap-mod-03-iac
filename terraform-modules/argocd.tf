@@ -2,30 +2,29 @@ resource "helm_release" "argocd" {
   name             = "argocd"
   repository       = "https://argoproj.github.io/argo-helm"
   chart            = "argo-cd"
-  namespace        = "eks-argocd-namespace"
+  namespace        = "argo-cd"
   create_namespace = true
   version          = "7.4.4"
-
   values = [
     yamlencode({
       server = {
+        extraArgs = ["--insecure"]
         ingress = {
           enabled          = true
           ingressClassName = "nginx"
-          hosts            = ["argocd.mysandbox.com.br"]
-          https            = true
+          hosts = [
+            "argocd.mysandbox.com.br"
+          ]
+          tls = [
+            {
+              hosts = [
+                "argocd.mysandbox.com.br"
+              ]
+              secretName = "argocd-tls-cert"
+            }
+          ]
         }
-        extraArgs = ["--insecure"]
       }
-      controller = {
-        clusterResourceWhitelist = [
-          {
-            group = "*"
-            kind  = "*"
-          }
-        ]
-      }
-      extraNamespaces = ["eks-namespace"]
     })
   ]
 }

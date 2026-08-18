@@ -3,6 +3,21 @@ output "cluster_eks_command" {
   value       = "aws eks update-kubeconfig --region us-east-1 --name ${module.eks_cluster.cluster_name}"
 }
 
+output "cluster_name" {
+  description = "Nome do cluster provisionado"
+  value       = module.eks_cluster.cluster_name
+}
+
+output "cluster_eks_endpoint" {
+  description = "Endpoint de conexão do ElastiCache Redis"
+  value       = module.eks_cluster.cluster_endpoint
+}
+
+output "cluster_cert_authority" {
+  description = "Certificado de Autorização do Cluster"
+  value       = module.eks_cluster.cluster_cert_authority
+}
+
 output "ecr_repos" {
   description = "URLs de todos os repositórios ECR gerados"
   value = {

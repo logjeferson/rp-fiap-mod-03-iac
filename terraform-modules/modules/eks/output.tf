@@ -8,6 +8,11 @@ output "cluster_endpoint" {
   value       = aws_eks_cluster.main.endpoint
 }
 
+output "cluster_cert_authority" {
+  description = "Certificado de Autorização do Cluster"
+  value       = aws_eks_cluster.main.certificate_authority
+}
+
 output "oidc_issuer_url" {
   description = "URL do OIDC Provider gerada pelo cluster EKS"
   value       = aws_eks_cluster.main.identity[0].oidc[0].issuer

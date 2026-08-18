@@ -2,12 +2,12 @@ resource "helm_release" "cert_manager" {
   name             = "cert-manager"
   repository       = "https://charts.jetstack.io"
   chart            = "cert-manager"
-  namespace        = "eks-cert-manager-namespace"
+  namespace        = "cert-manager"
   create_namespace = true
   version          = "v1.14.4"
-
-  set {
-    name  = "installCRDs"
-    value = "true"
-  }
+  values = [
+    yamlencode({
+      installCRDs = true
+    })
+  ]
 }
