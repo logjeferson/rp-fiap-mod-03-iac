@@ -18,7 +18,6 @@ variable "allow_ips" {
 variable "eks_cluster_name" {
   description = "Nome do Cluster EKS"
   type        = string
-  default     = "eks-cluster-01"
 }
 
 variable "ecr_repos" {

@@ -12,13 +12,17 @@ resource "helm_release" "argocd" {
         ingress = {
           enabled          = true
           ingressClassName = "nginx"
+          annotations = {
+            "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
+            "nginx.ingress.kubernetes.io/force-ssl-redirect" = "true"
+          }
           hosts = [
-            "argocd.mysandbox.com.br"
+            var.eks_argocd_domain_name
           ]
           tls = [
             {
               hosts = [
-                "argocd.mysandbox.com.br"
+                var.eks_argocd_domain_name
               ]
               secretName = "argocd-tls-cert"
             }
