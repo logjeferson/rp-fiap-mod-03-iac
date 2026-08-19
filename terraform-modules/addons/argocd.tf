@@ -6,6 +6,7 @@ resource "helm_release" "argocd" {
   namespace        = "argo-cd"
   create_namespace = true
   version          = "7.4.4"
+  timeout          = 600
   values = [
     yamlencode({
       server = {
