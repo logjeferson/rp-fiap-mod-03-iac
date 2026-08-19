@@ -9,6 +9,9 @@ resource "helm_release" "argocd" {
   timeout          = 600
   values = [
     yamlencode({
+      dex = {
+        enabled = false
+      }
       server = {
         extraArgs = ["--insecure"]
         ingress = {
