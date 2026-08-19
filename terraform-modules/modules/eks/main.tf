@@ -21,18 +21,15 @@ resource "aws_eks_cluster" "main" {
   name     = var.cluster_name
   role_arn = aws_iam_role.cluster_role.arn
   version  = "1.36"
-
   vpc_config {
     subnet_ids              = var.subnet_ids
     endpoint_private_access = true
     endpoint_public_access  = true
     public_access_cidrs     = ["0.0.0.0/0"] ##var.allowed_ips
   }
-
 access_config {
     authentication_mode = "API_AND_CONFIG_MAP"
   }
-
   depends_on = [aws_iam_role_policy_attachment.cluster_policy]
 }
 
@@ -81,13 +78,11 @@ resource "aws_eks_node_group" "main" {
   subnet_ids      = var.subnet_ids
   instance_types  = [var.node_instance_type]
   ami_type        = "AL2023_x86_64_STANDARD"
-
   scaling_config {
-    desired_size = 7
-    min_size     = 5
-    max_size     = 9
+    min_size     = 3
+    desired_size = 5
+    max_size     = 7
   }
-
   depends_on = [
     aws_iam_role_policy_attachment.node_worker_policy,
     aws_iam_role_policy_attachment.node_cni_policy,
@@ -117,7 +112,6 @@ resource "aws_eks_access_policy_association" "github_pipeline_access_admin" {
   cluster_name  = aws_eks_cluster.main.name
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
   principal_arn = "arn:aws:iam::162521700965:user/svc-github-actions"
-
   access_scope {
     type = "cluster"
   }
@@ -134,7 +128,6 @@ resource "aws_eks_access_policy_association" "my_access_admin" {
   cluster_name  = aws_eks_cluster.main.name
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
   principal_arn = "arn:aws:iam::162521700965:user/logjeferson"
-
   access_scope {
     type = "cluster"
   }

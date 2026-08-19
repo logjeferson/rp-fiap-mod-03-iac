@@ -4,7 +4,6 @@ resource "aws_security_group" "cache_sg" {
   description = "Permite acesso ao Cache em toda a VPC"
   vpc_id      = var.vpc_id
   tags        = { Name = var.nsg_cache_name }
-
   ingress {
     description = "Acesso interno ao Redis (VPC)"
     from_port   = 6379
