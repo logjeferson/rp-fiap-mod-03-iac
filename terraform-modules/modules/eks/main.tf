@@ -79,9 +79,9 @@ resource "aws_eks_node_group" "main" {
   instance_types  = [var.node_instance_type]
   ami_type        = "AL2023_x86_64_STANDARD"
   scaling_config {
-    min_size     = 3
-    desired_size = 5
-    max_size     = 7
+    min_size     = 10
+    desired_size = 13
+    max_size     = 16
   }
   depends_on = [
     aws_iam_role_policy_attachment.node_worker_policy,
