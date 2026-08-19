@@ -45,7 +45,7 @@ jobs:
 
           echo "##[section]Initializing Terraform..."
           terraform init \
-            -backend-config="bucket=${{ vars.AWS_BUCKET_IAC_NAME }}" \
+            -backend-config="bucket=${{ vars.AWS_BUCKET_NAME }}" \
             -backend-config="key=${{ vars.AWS_BUCKET_IAC_FOLDER_NAME }}"
 
       - name: Terraform - Validate - Infrastructure
@@ -132,7 +132,7 @@ jobs:
 
           echo "##[section]Initializing Terraform..."
           terraform init \
-            -backend-config="bucket=${{ vars.AWS_BUCKET_ADDONS_NAME }}" \
+            -backend-config="bucket=${{ vars.AWS_BUCKET_NAME }}" \
             -backend-config="key=${{ vars.AWS_BUCKET_ADDONS_FOLDER_NAME}}"
 
       - name: Terraform - Validate - Addons
@@ -157,7 +157,7 @@ jobs:
             -var="aws_region=${{ vars.AWS_REGION }}" \
             -var="eks_cluster_name=${{ env.EKS_CLUSTER_NAME }}" \
             -var="eks_argocd_domain_name=${{ vars.ARGOCD_DOMAIN_NAME }}" \
-            -var="aws_bucket_iac_name=${{ vars.AWS_BUCKET_IAC_NAME }}" \
+            -var="aws_bucket_iac_name=${{ vars.AWS_BUCKET_NAME }}" \
             -var="aws_bucket_iac_folder_name=${{ vars.AWS_BUCKET_IAC_FOLDER_NAME }}" \
 
       - name: Terraform - Apply - Addons
@@ -172,7 +172,7 @@ jobs:
             -var="aws_region=${{ vars.AWS_REGION }}" \
             -var="eks_cluster_name=${{ env.EKS_CLUSTER_NAME }}" \
             -var="eks_argocd_domain_name=${{ vars.ARGOCD_DOMAIN_NAME }}" \
-            -var="aws_bucket_iac_name=${{ vars.AWS_BUCKET_IAC_NAME }}" \
+            -var="aws_bucket_iac_name=${{ vars.AWS_BUCKET_NAME }}" \
             -var="aws_bucket_iac_folder_name=${{ vars.AWS_BUCKET_IAC_FOLDER_NAME }}"
 
   configs:
@@ -330,7 +330,7 @@ jobs:
 
           echo "##[section]Initializing Terraform..."
           terraform init \
-            -backend-config="bucket=${{ vars.AWS_BUCKET_ADDONS_NAME }}" \
+            -backend-config="bucket=${{ vars.AWS_BUCKET_NAME }}" \
             -backend-config="key=${{ vars.AWS_BUCKET_ADDONS_FOLDER_NAME}}"
 
       - name: Terraform - Destroy - Addons
@@ -345,7 +345,7 @@ jobs:
             -var="aws_region=${{ vars.AWS_REGION }}" \
             -var="eks_cluster_name=${{ env.EKS_CLUSTER_NAME }}" \
             -var="eks_argocd_domain_name=${{ vars.ARGOCD_DOMAIN_NAME }}" \
-            -var="aws_bucket_iac_name=${{ vars.AWS_BUCKET_IAC_NAME }}" \
+            -var="aws_bucket_iac_name=${{ vars.AWS_BUCKET_NAME }}" \
             -var="aws_bucket_iac_folder_name=${{ vars.AWS_BUCKET_IAC_FOLDER_NAME }}"
 
       - name: Terraform - Init - Infrastructure
@@ -357,7 +357,7 @@ jobs:
 
           echo "##[section]Initializing Terraform..."
           terraform init \
-            -backend-config="bucket=${{ vars.AWS_BUCKET_IAC_NAME }}" \
+            -backend-config="bucket=${{ vars.AWS_BUCKET_NAME }}" \
             -backend-config="key=${{ vars.AWS_BUCKET_IAC_FOLDER_NAME }}"
 
       - name: Terraform - Destroy - Infrastructure
