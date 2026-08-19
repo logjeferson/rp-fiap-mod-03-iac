@@ -1,4 +1,5 @@
 resource "helm_release" "argocd" {
+  depends_on       = [helm_release.ingress_nginx]
   name             = "argocd"
   repository       = "https://argoproj.github.io/argo-helm"
   chart            = "argo-cd"
@@ -32,3 +33,6 @@ resource "helm_release" "argocd" {
     })
   ]
 }
+
+# Obter a senha - Gitbash
+# kubectl -n argo-cd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
