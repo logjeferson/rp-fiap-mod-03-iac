@@ -1,10 +1,17 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "eks-namespace"
+
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: "ingress-nginx"
-  namespace: "ingress-nginx"
+  namespace: "eks-namespace"
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   tls:

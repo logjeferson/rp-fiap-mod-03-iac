@@ -15,7 +15,7 @@ resource "aws_internet_gateway" "igw" {
 # Sub-rede Pública 1 (Para Load Balancers EKS - AZ a)
 resource "aws_subnet" "publicA" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = cidrsubnet(var.vpc_cidr, 8, 1) # Ex: 10.0.1.0/24
+  cidr_block              = cidrsubnet(var.vpc_cidr, 6, 1) # Ex: 10.0.4.0/22
   availability_zone       = "${var.region}a"
   map_public_ip_on_launch = true
   tags = {
@@ -27,7 +27,7 @@ resource "aws_subnet" "publicA" {
 # Sub-rede Pública 2 (Para Load Balancers EKS - AZ b)
 resource "aws_subnet" "publicB" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = cidrsubnet(var.vpc_cidr, 8, 2) # Ex: 10.0.2.0/24
+  cidr_block              = cidrsubnet(var.vpc_cidr, 6, 2) # Ex: 10.0.8.0/22
   availability_zone       = "${var.region}b"
   map_public_ip_on_launch = true
   tags = {
@@ -39,7 +39,7 @@ resource "aws_subnet" "publicB" {
 # Sub-rede Privada 1 (Para o EKS Nodes e RDS - AZ a)
 resource "aws_subnet" "privateA" {
   vpc_id            = aws_vpc.main.id
-  cidr_block        = cidrsubnet(var.vpc_cidr, 8, 3) # Ex: 10.0.3.0/24
+  cidr_block        = cidrsubnet(var.vpc_cidr, 6, 3) # Ex: 10.0.12.0/22
   availability_zone = "${var.region}a"
   tags = {
     Name                              = var.subnet_privateA_name
@@ -50,7 +50,7 @@ resource "aws_subnet" "privateA" {
 # Sub-rede Privada 2 (Para o EKS Nodes e RDS - AZ b)
 resource "aws_subnet" "privateB" {
   vpc_id            = aws_vpc.main.id
-  cidr_block        = cidrsubnet(var.vpc_cidr, 8, 4) # Ex: 10.0.4.0/24
+  cidr_block        = cidrsubnet(var.vpc_cidr, 6, 4) # Ex: 10.0.16.0/22
   availability_zone = "${var.region}b"
   tags = {
     Name                              = var.subnet_privateB_name

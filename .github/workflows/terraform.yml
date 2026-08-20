@@ -182,7 +182,6 @@ jobs:
     env:
       EKS_NAMESPACE: 'eks-namespace'
       EKS_INGRESS_NAME: 'ingress-nginx'
-      EKS_INGRESS_NAMESPACE: 'ingress-nginx'
       EKS_CERT_MANAGER_NAMESPACE: 'cert-manager'
     steps:
       - name: Checkout Repo
@@ -216,7 +215,7 @@ jobs:
           echo "--------------------------------------------------"
 
           echo "##[section]Applying the Ingress Nginx Rules..."
-          kubectl wait --namespace ${{ env.EKS_INGRESS_NAMESPACE }} \
+          kubectl wait --namespace ${{ env.EKS_NAMESPACE }} \
             --for=condition=ready pod \
             --selector=app.kubernetes.io/component=controller \
             --timeout=180s
@@ -224,7 +223,7 @@ jobs:
           sleep 3
 
           echo "##[section]Validating the Ingress Nginx Services..."
-          kubectl get service --namespace ${{ env.EKS_INGRESS_NAMESPACE }} ingress-nginx-controller
+          kubectl get service --namespace ${{ env.EKS_NAMESPACE }} ingress-nginx-controller
 
       - name: Cert-Manager - Apply Rules
         run: |
@@ -251,7 +250,7 @@ jobs:
           echo "##[section]Waiting for the NGINX Service to provision the NLB..."
           NLB_DNS=""
           while [ -z "$NLB_DNS" ]; do
-            NLB_DNS=$(kubectl get svc ingress-nginx-controller --namespace ${{ env.EKS_INGRESS_NAMESPACE }} --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+            NLB_DNS=$(kubectl get svc ingress-nginx-controller --namespace ${{ env.EKS_NAMESPACE }} --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 
             if [ -z "$NLB_DNS" ]; then
               echo "##[section]Waiting another 10 seconds..."
