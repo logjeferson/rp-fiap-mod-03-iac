@@ -70,6 +70,23 @@ resource "aws_iam_role_policy_attachment" "node_dynamodb_policy" {
   role       = aws_iam_role.node_role.name
 }
 
+resource "aws_launch_template" "eks_nodes" {
+  name_prefix = "${var.cluster_name}-node-template"
+  block_device_mappings {
+    device_name = "/dev/xvda"
+    ebs {
+      volume_size           = 50
+      volume_type           = "gp3"
+      delete_on_termination = true
+    }
+  }
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_put_response_hop_limit = 2
+    http_tokens                 = "required"
+  }
+}
+
 # Node Group
 resource "aws_eks_node_group" "main" {
   cluster_name    = aws_eks_cluster.main.name
@@ -79,9 +96,13 @@ resource "aws_eks_node_group" "main" {
   instance_types  = [var.node_instance_type]
   ami_type        = "AL2023_x86_64_STANDARD"
   scaling_config {
-    min_size     = 10
-    desired_size = 13
-    max_size     = 16
+    min_size     = 3
+    desired_size = 5
+    max_size     = 7
+  }
+  launch_template {
+    name    = aws_launch_template.eks_nodes.name
+    version = aws_launch_template.eks_nodes.latest_version
   }
   depends_on = [
     aws_iam_role_policy_attachment.node_worker_policy,
