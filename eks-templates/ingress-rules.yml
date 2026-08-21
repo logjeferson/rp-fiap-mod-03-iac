@@ -1,3 +1,79 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "homepage-html"
+  namespace: "eks-namespace"
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>My Sandbox APIs</title>
+        <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; text-align: center; padding: 10%; margin: 0; }
+            .container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: inline-block; max-width: 600px; }
+            h1 { color: #0056b3; }
+            p { font-size: 1.1em; line-height: 1.6; }
+            .status { margin-top: 20px; padding: 10px; background-color: #d4edda; color: #155724; border-radius: 5px; font-weight: bold; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🚀 My Sandbox APIs</h1>
+            <p>Bem-vindo ao ambiente de laboratório EKS.</p>
+            <p>Todos os microsserviços (Auth, Flags, Targeting, Evaluation e Analytics) estão operacionais e gerenciados via GitOps com ArgoCD.</p>
+            <div class="status">✅ Status do Cluster: Operacional</div>
+        </div>
+    </body>
+    </html>
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "homepage-deployment"
+  namespace: "eks-namespace"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: homepage
+  template:
+    metadata:
+      labels:
+        app: homepage
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: html-volume
+          mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+      volumes:
+      - name: html-volume
+        configMap:
+          name: homepage-html
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "homepage-service"
+  namespace: "eks-namespace"
+spec:
+  selector:
+    app: homepage
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -17,6 +93,14 @@ spec:
     - host: "apis.mysandbox.com.br"
       http:
         paths:
+          # --- ROTA DO HOMEPAGE SERVICE ---
+          - path: /home(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: homepage-service
+                port:
+                  number: 80
           # --- ROTA DO AUTH SERVICE ---
           - path: /auth(/|$)(.*)
             pathType: Prefix
