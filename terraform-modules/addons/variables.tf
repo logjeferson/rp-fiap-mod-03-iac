@@ -13,6 +13,12 @@ variable "aws_bucket_iac_folder_name" {
   type        = string
 }
 
+variable "discord_webhook_url" {
+  description = "Endereço do webhook de publicação dos Alertas"
+  type        = string
+  sensitive   = true
+}
+
 variable "eks_cluster_name" {
   description = "Nome do Cluster EKS"
   type        = string
@@ -20,6 +26,11 @@ variable "eks_cluster_name" {
 
 variable "eks_argocd_domain_name" {
   description = "Endereço de domínio de publicação do ArgoCD"
+  type        = string
+}
+
+variable "eks_alertmanager_domain_name" {
+  description = "Endereço de domínio de publicação do Alert Manager"
   type        = string
 }
 
