@@ -154,13 +154,13 @@ jobs:
             -var="aws_region=${{ vars.AWS_REGION }}" \
             -var="aws_bucket_iac_name=${{ vars.AWS_BUCKET_NAME }}" \
             -var="aws_bucket_iac_folder_name=${{ vars.AWS_BUCKET_IAC_FOLDER_NAME }}" \
-            -var="discord_webhook_url=${{ secrets.DISCORD_WEBHOOK_URL }}" \
             -var="eks_cluster_name=${{ env.EKS_CLUSTER_NAME }}" \
             -var="eks_argocd_domain_name=${{ vars.ARGOCD_DOMAIN_NAME }}" \
             -var="eks_alertmanager_domain_name=${{ vars.ALERTMANAGER_DOMAIN_NAME }}" \
             -var="eks_grafana_domain_name=${{ vars.GRAFANA_DOMAIN_NAME }}" \
             -var="eks_prometheus_domain_name=${{ vars.PROMETHEUS_DOMAIN_NAME }}" \
-            -var="new_relic_license_key=${{ secrets.NEW_RELIC_LICENSE_KEY }}"
+            -var="new_relic_license_key=${{ secrets.NEW_RELIC_LICENSE_KEY }}" \
+            -var="pagerduty_routing_key=${{ secrets.PAGERDUTY_ROUTING_KEY }}"
 
       - name: Terraform - Apply - Addons
         working-directory: ${{ env.TF_WORKING_DIR }}/addons
@@ -174,13 +174,13 @@ jobs:
             -var="aws_region=${{ vars.AWS_REGION }}" \
             -var="aws_bucket_iac_name=${{ vars.AWS_BUCKET_NAME }}" \
             -var="aws_bucket_iac_folder_name=${{ vars.AWS_BUCKET_IAC_FOLDER_NAME }}" \
-            -var="discord_webhook_url=${{ secrets.DISCORD_WEBHOOK_URL }}" \
             -var="eks_cluster_name=${{ env.EKS_CLUSTER_NAME }}" \
             -var="eks_argocd_domain_name=${{ vars.ARGOCD_DOMAIN_NAME }}" \
             -var="eks_alertmanager_domain_name=${{ vars.ALERTMANAGER_DOMAIN_NAME }}" \
             -var="eks_grafana_domain_name=${{ vars.GRAFANA_DOMAIN_NAME }}" \
             -var="eks_prometheus_domain_name=${{ vars.PROMETHEUS_DOMAIN_NAME }}" \
-            -var="new_relic_license_key=${{ secrets.NEW_RELIC_LICENSE_KEY }}"
+            -var="new_relic_license_key=${{ secrets.NEW_RELIC_LICENSE_KEY }}" \
+            -var="pagerduty_routing_key=${{ secrets.PAGERDUTY_ROUTING_KEY }}"
 
   configs:
     name: 'AWS - CONFIGS'
@@ -390,13 +390,13 @@ jobs:
             -var="aws_region=${{ vars.AWS_REGION }}" \
             -var="aws_bucket_iac_name=${{ vars.AWS_BUCKET_NAME }}" \
             -var="aws_bucket_iac_folder_name=${{ vars.AWS_BUCKET_IAC_FOLDER_NAME }}" \
-            -var="discord_webhook_url=${{ secrets.DISCORD_WEBHOOK_URL }}" \
             -var="eks_cluster_name=${{ env.EKS_CLUSTER_NAME }}" \
             -var="eks_argocd_domain_name=${{ vars.ARGOCD_DOMAIN_NAME }}" \
             -var="eks_alertmanager_domain_name=${{ vars.ALERTMANAGER_DOMAIN_NAME }}" \
             -var="eks_grafana_domain_name=${{ vars.GRAFANA_DOMAIN_NAME }}" \
             -var="eks_prometheus_domain_name=${{ vars.PROMETHEUS_DOMAIN_NAME }}" \
-            -var="new_relic_license_key=${{ secrets.NEW_RELIC_LICENSE_KEY }}"
+            -var="new_relic_license_key=${{ secrets.NEW_RELIC_LICENSE_KEY }}" \
+            -var="pagerduty_routing_key=${{ secrets.PAGERDUTY_ROUTING_KEY }}"
 
       - name: Terraform - Init - Infrastructure
         working-directory: ${{ env.TF_WORKING_DIR }}

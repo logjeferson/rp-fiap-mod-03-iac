@@ -50,18 +50,14 @@ resource "helm_release" "kube_prometheus_stack" {
           group_wait: 30s
           group_interval: 5m
           repeat_interval: 12h
-          receiver: 'discord'
+          receiver: 'pagerduty-on-call'
         receivers:
-          - name: 'discord'
-            slack_configs:
-              - api_url: "${var.discord_webhook_url}/slack"
-                channel: '#techchallenge-mod4'
-                send_resolved: true
-                title: '[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}'
-                text: >-
-                  *Severidade:* {{ .CommonLabels.severity }}
-                  *Namespace:* {{ .CommonLabels.namespace }}
-                  *Descrição:* {{ .CommonAnnotations.description }}
+          - name: 'pagerduty-on-call'
+            pagerduty_configs:
+              - routing_key: "${var.pagerduty_routing_key}"
+                description: '[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}'
+                severity: '{{ if eq .CommonLabels.severity "critical" }}critical{{ else }}warning{{ end }}'
+                source: 'Prometheus EKS'
     additionalPrometheusRulesMap:
       rule-high-request-rate:
         groups:

@@ -13,12 +13,6 @@ variable "aws_bucket_iac_folder_name" {
   type        = string
 }
 
-variable "discord_webhook_url" {
-  description = "Endereço do webhook de publicação dos Alertas"
-  type        = string
-  sensitive   = true
-}
-
 variable "eks_cluster_name" {
   description = "Nome do Cluster EKS"
   type        = string
@@ -46,6 +40,12 @@ variable "eks_prometheus_domain_name" {
 
 variable "new_relic_license_key" {
   description = "Chave de Licença do New Relic"
+  type        = string
+  sensitive   = true
+}
+
+variable "pagerduty_routing_key" {
+  description = "Chave de Licença do PagerDuty"
   type        = string
   sensitive   = true
 }
