@@ -1,34 +1,42 @@
 import json
 import boto3
 import os
+import base64
 
 def lambda_handler(event, context):
-    print("Payload recebido:", json.dumps(event))
+    print("Payload bruto recebido:", json.dumps(event))
     
-    # 1. Carrega o mapa dinâmico de bancos gerado pelo Terraform
+    # 1. Carrega o mapa dinâmico de bancos
     db_map_str = os.environ.get('RDS_MAP', '{}')
     db_map = json.loads(db_map_str)
     
-    body = json.loads(event.get('body', '{}'))
+    # 2. Tratamento resiliente do Body (Desempacota Base64 se a AWS tiver convertido)
+    raw_body = event.get('body', '{}')
+    if event.get('isBase64Encoded', False):
+        raw_body = base64.b64decode(raw_body).decode('utf-8')
+        
+    try:
+        body = json.loads(raw_body)
+    except Exception as e:
+        print(f"Erro ao converter JSON do body: {e}")
+        return {'statusCode': 400, 'body': 'Formato de payload invalido.'}
+        
     alerts = body.get('alerts', [])
     
     for alert in alerts:
-        # Só executa se for a regra de falha HTTP
+        # Verifica se o alerta é de falha HTTP 5xx
         if alert.get('status') == 'firing' and alert['labels'].get('alertname') == 'HighHttp5xxErrorRate':
             
-            # O nome do Ingress (ex: 'auth-ingress' ou 'flag-ingress') vem nos labels da métrica
             ingress_name = alert['labels'].get('ingress', '').lower()
-            
             target_db_identifier = None
             
-            # 2. Descobre qual banco pertence ao serviço que falhou
+            # 3. Descobre qual banco pertence ao serviço
             for key, db_config in db_map.items():
-                # Se 'auth' estiver no nome do ingress 'auth-ingress', achamos o alvo
                 if key in ingress_name:
                     target_db_identifier = db_config['identifier']
                     break
             
-            # 3. Executa a remediação no banco correto
+            # 4. Executa a remediação
             if target_db_identifier:
                 print(f"Match! Ingress '{ingress_name}' disparou. Alvo: RDS '{target_db_identifier}'")
                 rds = boto3.client('rds')
@@ -47,4 +55,4 @@ def lambda_handler(event, context):
             else:
                 print(f"Nenhum banco mapeado para o ingress: {ingress_name}")
 
-    return {'statusCode': 200, 'body': 'Runbook finalizado.'}
+    return {'statusCode': 200, 'body': 'Runbook executado com sucesso.'}
