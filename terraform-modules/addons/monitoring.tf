@@ -65,6 +65,9 @@ resource "helm_release" "kube_prometheus_stack" {
                 description: '[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}'
                 severity: '{{ if eq .CommonLabels.severity "critical" }}critical{{ else }}warning{{ end }}'
                 source: 'Prometheus EKS'
+            webhook_configs:
+              - url: '${aws_lambda_function_url.remediation_webhook.function_url}'
+                send_resolved: false
     additionalPrometheusRulesMap:
       rule-high-request-rate:
         groups:
@@ -85,6 +88,14 @@ resource "helm_release" "kube_prometheus_stack" {
                   severity: critical
                 annotations:
                   summary: "Alta taxa de Erros 4xx no Ingress {{ $labels.ingress }}"
+                  description: "O Ingress {{ $labels.ingress }} no namespace {{ $labels.namespace }} está retornando falhas no servidor (Atual: {{ $value | printf \"%.1f\" }} erros/s)."
+              - alert: HighHttp5xxErrorRate
+                expr: sum(rate(nginx_ingress_controller_requests{status=~"5.."}[2m])) by (ingress, namespace) > 1
+                for: 1m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "Alta taxa de Erros 5xx no Ingress {{ $labels.ingress }}"
                   description: "O Ingress {{ $labels.ingress }} no namespace {{ $labels.namespace }} está retornando falhas no servidor (Atual: {{ $value | printf \"%.1f\" }} erros/s)."
     prometheus:
       ingress:
