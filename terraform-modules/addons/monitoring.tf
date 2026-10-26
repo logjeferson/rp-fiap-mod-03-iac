@@ -52,6 +52,7 @@ resource "helm_release" "kube_prometheus_stack" {
           repeat_interval: 12h
           receiver: 'pagerduty-on-call'
         receivers:
+          - name: 'null'
           - name: 'pagerduty-on-call'
             pagerduty_configs:
               - routing_key: "${var.pagerduty_routing_key}"
