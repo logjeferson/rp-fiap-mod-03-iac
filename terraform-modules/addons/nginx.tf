@@ -13,6 +13,12 @@ resource "helm_release" "ingress_nginx" {
             "service.beta.kubernetes.io/aws-load-balancer-type" = "nlb"
           }
         }
+        metrics = {
+          enabled = true
+          serviceMonitor = {
+            enabled = true
+          }
+        }
       }
     })
   ]
