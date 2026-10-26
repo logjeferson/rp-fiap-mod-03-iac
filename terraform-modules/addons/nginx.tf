@@ -17,6 +17,9 @@ resource "helm_release" "ingress_nginx" {
           enabled = true
           serviceMonitor = {
             enabled = true
+            additionalLabels = {
+              release = "kube-prometheus-stack"
+            }
           }
         }
       }
