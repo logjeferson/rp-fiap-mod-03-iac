@@ -60,14 +60,6 @@ resource "aws_lambda_function" "remediation_lambda" {
   }
 }
 
-resource "aws_lambda_permission" "public_function_url" {
-  statement_id           = "AllowPublicInvoke"
-  action                 = "lambda:InvokeFunctionUrl"
-  function_name          = aws_lambda_function.remediation_lambda.function_name
-  principal              = "*"
-  function_url_auth_type = "NONE"
-}
-
 resource "aws_lambda_function_url" "remediation_webhook" {
   function_name      = aws_lambda_function.remediation_lambda.function_name
   authorization_type = "NONE"
