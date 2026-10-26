@@ -8,6 +8,12 @@ resource "helm_release" "kube_prometheus_stack" {
   version          = "57.2.0"
   values = [
     <<-EOT
+    kubeControllerManager:
+      enabled: false
+    kubeScheduler:
+      enabled: false
+    kubeEtcd:
+      enabled: false
     grafana:
       ingress:
         enabled: true
