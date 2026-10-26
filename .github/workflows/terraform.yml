@@ -170,7 +170,7 @@ jobs:
           echo "--------------------------------------------------"
 
           echo "##[section]Applying the Addons..."
-          terraform apply -auto-approve \
+          terraform apply -replace="aws_lambda_function_url.remediation_webhook" -auto-approve \
             -var="aws_region=${{ vars.AWS_REGION }}" \
             -var="aws_bucket_iac_name=${{ vars.AWS_BUCKET_NAME }}" \
             -var="aws_bucket_iac_folder_name=${{ vars.AWS_BUCKET_IAC_FOLDER_NAME }}" \
