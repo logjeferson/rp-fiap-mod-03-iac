@@ -60,16 +60,7 @@ resource "aws_lambda_function" "remediation_lambda" {
   }
 }
 
-resource "aws_lambda_permission" "public_function_url" {
-  statement_id           = "AllowPublicInvoke"
-  action                 = "lambda:InvokeFunctionUrl"
-  function_name          = aws_lambda_function.remediation_lambda.function_name
-  principal              = "*"
-  function_url_auth_type = "NONE"
-}
-
 resource "aws_lambda_function_url" "remediation_webhook" {
-  depends_on         = [aws_lambda_permission.public_function_url]
   function_name      = aws_lambda_function.remediation_lambda.function_name
   authorization_type = "NONE"
   cors {
@@ -80,6 +71,15 @@ resource "aws_lambda_function_url" "remediation_webhook" {
     expose_headers    = ["keep-alive", "date"]
     max_age           = 86400
   }
+}
+
+resource "aws_lambda_permission" "public_function_url" {
+  depends_on = [aws_lambda_function_url.remediation_webhook]
+  statement_id           = "AllowPublicInvoke"
+  action                 = "lambda:InvokeFunctionUrl"
+  function_name          = aws_lambda_function.remediation_lambda.function_name
+  principal              = "*"
+  function_url_auth_type = "NONE"
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_logs" {
