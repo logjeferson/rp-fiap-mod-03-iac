@@ -44,14 +44,15 @@ def lambda_handler(event, context):
                 try:
                     response = rds.describe_db_instances(DBInstanceIdentifier=target_db_identifier)
                     status = response['DBInstances'][0]['DBInstanceStatus']
-                    
-                    if status == 'stopped':
-                        print(f"Banco {target_db_identifier} parado. Enviando start_db_instance...")
-                        rds.start_db_instance(DBInstanceIdentifier=target_db_identifier)
+                    print(f"Status atual do banco {target_db_identifier}: {status}")
+                    if status in ['stopped', 'stopped temporarily']:
+                        print(f"Banco {target_db_identifier} está parado. Enviando start_db_instance...")
+                        start_resp = rds.start_db_instance(DBInstanceIdentifier=target_db_identifier)
+                        print(f"Resposta da AWS ao Start: {start_resp['DBInstance']['DBInstanceStatus']}")
                     else:
                         print(f"Banco em status '{status}'. Nenhuma ação infra necessária.")
                 except Exception as e:
-                    print(f"Erro ao interagir com RDS: {str(e)}")
+                    print(f"ERRO CRÍTICO AO INTERAGIR COM RDS: {str(e)}")
             else:
                 print(f"Nenhum banco mapeado para o ingress: {ingress_name}")
 
