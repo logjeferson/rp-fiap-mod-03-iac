@@ -13,14 +13,14 @@ variable "rds_dbs" {
 
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_file = "self-healing.py"
-  output_path = "remediation_payload.zip"
+  source_file = "${path.module}/self-healing.py"
+  output_path = "${path.module}/lambda.zip"
 }
 
 resource "aws_iam_role" "lambda_remediation_role" {
   name = "lambda-remediation-role"
   assume_role_policy = jsonencode({
-    Version = "2012-10-17"
+    Version   = "2012-10-17"
     Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "lambda.amazonaws.com" } }]
   })
 }
@@ -32,13 +32,13 @@ resource "aws_iam_role_policy" "lambda_rds_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect = "Allow"
-        Action = ["rds:DescribeDBInstances", "rds:StartDBInstance"]
+        Effect   = "Allow"
+        Action   = ["rds:DescribeDBInstances", "rds:StartDBInstance"]
         Resource = "*"
       },
       {
-        Effect = "Allow"
-        Action = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+        Effect   = "Allow"
+        Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
         Resource = "arn:aws:logs:*:*:*"
       }
     ]
@@ -50,7 +50,7 @@ resource "aws_lambda_function" "remediation_lambda" {
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
   function_name    = "sre-rds-remediation"
   role             = aws_iam_role.lambda_remediation_role.arn
-  handler          = "remediation.lambda_handler"
+  handler          = "self-healing.lambda_handler"
   runtime          = "python3.10"
   timeout          = 15
   environment {
@@ -80,4 +80,9 @@ resource "aws_lambda_function_url" "remediation_webhook" {
     expose_headers    = ["keep-alive", "date"]
     max_age           = 86400
   }
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_logs" {
+  role       = aws_iam_role.lambda_remediation_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
