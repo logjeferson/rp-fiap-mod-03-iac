@@ -13,7 +13,7 @@ variable "rds_dbs" {
 
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_file = "remediation.py"
+  source_file = "self-healing.py"
   output_path = "remediation_payload.zip"
 }
 
