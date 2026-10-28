@@ -1,5 +1,5 @@
 resource "helm_release" "kube_prometheus_stack" {
-  depends_on       = [aws_lambda_function.remediation_lambda]
+  depends_on       = [aws_lambda_function_url.remediation_webhook]
   name             = "kube-prometheus-stack"
   repository       = "https://prometheus-community.github.io/helm-charts"
   chart            = "kube-prometheus-stack"
@@ -116,7 +116,7 @@ resource "helm_release" "kube_prometheus_stack" {
 }
 
 resource "helm_release" "loki" {
-  depends_on       = [aws_lambda_function.remediation_lambda]
+  depends_on       = [aws_lambda_function_url.remediation_webhook]
   name             = "loki"
   repository       = "https://grafana.github.io/helm-charts"
   chart            = "loki-stack"
@@ -136,7 +136,7 @@ resource "helm_release" "loki" {
 }
 
 resource "helm_release" "opentelemetry_collector" {
-  depends_on       = [aws_lambda_function.remediation_lambda]
+  depends_on       = [aws_lambda_function_url.remediation_webhook]
   name             = "otel-collector"
   repository       = "https://open-telemetry.github.io/opentelemetry-helm-charts"
   chart            = "opentelemetry-collector"
