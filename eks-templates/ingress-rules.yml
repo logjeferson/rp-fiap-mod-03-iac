@@ -1,88 +1,86 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: "homepage-html"
-  namespace: "eks-namespace"
-data:
-  index.html: |
-    <!DOCTYPE html>
-    <html lang="pt-BR">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>My Sandbox APIs</title>
-        <style>
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; text-align: center; padding: 10%; margin: 0; }
-            .container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: inline-block; max-width: 600px; }
-            h1 { color: #0056b3; }
-            p { font-size: 1.1em; line-height: 1.6; }
-            .status { margin-top: 20px; padding: 10px; background-color: #d4edda; color: #155724; border-radius: 5px; font-weight: bold; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>🚀 My Sandbox APIs</h1>
-            <p>Bem-vindo ao ambiente de laboratório EKS.</p>
-            <p>Todos os microsserviços (Auth, Flags, Targeting, Evaluation e Analytics) estão operacionais e gerenciados via GitOps com ArgoCD.</p>
-            <div class="status">✅ Status do Cluster: Operacional</div>
-        </div>
-    </body>
-    </html>
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: "homepage-deployment"
-  namespace: "eks-namespace"
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: homepage
-  template:
-    metadata:
-      labels:
-        app: homepage
-    spec:
-      containers:
-      - name: nginx
-        image: nginx:alpine
-        ports:
-        - containerPort: 80
-        volumeMounts:
-        - name: html-volume
-          mountPath: /usr/share/nginx/html/index.html
-          subPath: index.html
-      volumes:
-      - name: html-volume
-        configMap:
-          name: homepage-html
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: "homepage-service"
-  namespace: "eks-namespace"
-spec:
-  selector:
-    app: homepage
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 80
-
----
+# ==========================================
+# 1. AUTH SERVICE INGRESS
+# ==========================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: "ingress-nginx"
+  name: auth-ingress
+  namespace: eks-namespace
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "5"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "5"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "5"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - "apis.mysandbox.com.br"
+      secretName: apis-tls-cert
+  rules:
+    - host: "apis.mysandbox.com.br"
+      http:
+        paths:
+          - path: /auth(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 8001
+---
+
+# ==========================================
+# 2. FLAGS SERVICE INGRESS
+# ==========================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: flags-ingress
+  namespace: eks-namespace
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "5"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "5"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "5"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - "apis.mysandbox.com.br"
+      secretName: apis-tls-cert
+  rules:
+    - host: "apis.mysandbox.com.br"
+      http:
+        paths:
+          - path: /flags(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: flag-service
+                port:
+                  number: 8002
+---
+
+# ==========================================
+# 3. TARGETING SERVICE INGRESS
+# ==========================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: "targeting-ingress"
   namespace: "eks-namespace"
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "5"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "5"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "5"
 spec:
   tls:
     - hosts:
@@ -93,32 +91,6 @@ spec:
     - host: "apis.mysandbox.com.br"
       http:
         paths:
-          # --- ROTA DO HOMEPAGE SERVICE ---
-          - path: /home(/|$)(.*)
-            pathType: Prefix
-            backend:
-              service:
-                name: homepage-service
-                port:
-                  number: 80
-          # --- ROTA DO AUTH SERVICE ---
-          - path: /auth(/|$)(.*)
-            pathType: Prefix
-            backend:
-              service:
-                name: auth-service
-                port:
-                  number: 8001
-
-          # --- ROTA DO FLAG SERVICE ---
-          - path: /flags(/|$)(.*)
-            pathType: Prefix
-            backend:
-              service:
-                name: flag-service
-                port:
-                  number: 8002
-
           # --- ROTA DO TARGETING SERVICE ---
           - path: /targeting(/|$)(.*)
             pathType: Prefix
@@ -127,7 +99,33 @@ spec:
                 name: targeting-service
                 port:
                   number: 8003
-                  
+---
+
+# ==========================================
+# 4. EVALUATION SERVICE INGRESS
+# ==========================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: "evaluation-ingress"
+  namespace: "eks-namespace"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "5"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "5"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "5"
+spec:
+  tls:
+    - hosts:
+      - "apis.mysandbox.com.br"
+      secretName: apis-tls-cert
+  ingressClassName: nginx
+  rules:
+    - host: "apis.mysandbox.com.br"
+      http:
+        paths:
           # --- ROTA DO EVALUATION SERVICE ---
           - path: /evaluation(/|$)(.*)
             pathType: Prefix
@@ -136,7 +134,33 @@ spec:
                 name: evaluation-service
                 port:
                   number: 8004
+---
 
+# ==========================================
+# 5. ANALYTICS SERVICE INGRESS
+# ==========================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: "analytics-ingress"
+  namespace: "eks-namespace"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "5"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "5"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "5"
+spec:
+  tls:
+    - hosts:
+      - "apis.mysandbox.com.br"
+      secretName: apis-tls-cert
+  ingressClassName: nginx
+  rules:
+    - host: "apis.mysandbox.com.br"
+      http:
+        paths:
           # --- ROTA DO ANALYTICS SERVICE ---
           - path: /analytics(/|$)(.*)
             pathType: Prefix

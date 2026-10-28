@@ -74,7 +74,7 @@ resource "helm_release" "kube_prometheus_stack" {
           - name: custom-traffic-alerts
             rules:
               - alert: HighHttpRequestRate
-                expr: sum(rate(nginx_ingress_controller_requests[2m])) by (ingress, namespace) > 2
+                expr: sum(rate(nginx_ingress_controller_requests[2m])) by (ingress, namespace) > 10
                 for: 1m
                 labels:
                   severity: warning
@@ -82,7 +82,7 @@ resource "helm_release" "kube_prometheus_stack" {
                   summary: "Alta taxa de requisições no Ingress {{ $labels.ingress }}"
                   description: "O Ingress {{ $labels.ingress }} no namespace {{ $labels.namespace }} ultrapassou 2 req/s nos últimos 2 minutos (Atual: {{ $value | printf \"%.1f\" }} req/s)."
               - alert: HighHttp4xxErrorRate
-                expr: sum(rate(nginx_ingress_controller_requests{status=~"4.."}[2m])) by (ingress, namespace) > 1
+                expr: sum(rate(nginx_ingress_controller_requests{status=~"4.."}[2m])) by (ingress, namespace) > 0.1
                 for: 1m
                 labels:
                   severity: critical
@@ -90,7 +90,7 @@ resource "helm_release" "kube_prometheus_stack" {
                   summary: "Alta taxa de Erros 4xx no Ingress {{ $labels.ingress }}"
                   description: "O Ingress {{ $labels.ingress }} no namespace {{ $labels.namespace }} está retornando falhas no servidor (Atual: {{ $value | printf \"%.1f\" }} erros/s)."
               - alert: HighHttp5xxErrorRate
-                expr: sum(rate(nginx_ingress_controller_requests{status=~"5.."}[2m])) by (ingress, namespace) > 1
+                expr: sum(rate(nginx_ingress_controller_requests{status=~"5.."}[2m])) by (ingress, namespace) > 0.1
                 for: 1m
                 labels:
                   severity: critical
