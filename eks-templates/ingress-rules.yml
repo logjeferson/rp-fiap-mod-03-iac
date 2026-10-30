@@ -1,13 +1,47 @@
 # ==========================================
+# 0. HOME SERVICE INGRESS
+# ==========================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: "home-ingress"
+  namespace: "eks-namespace"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "5"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "5"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "5"
+spec:
+  tls:
+    - hosts:
+      - "apis.mysandbox.com.br"
+      secretName: apis-tls-cert
+  ingressClassName: nginx
+  rules:
+    - host: "apis.mysandbox.com.br"
+      http:
+        paths:
+          # --- ROTA DO HOMEPAGE SERVICE ---
+          - path: /home(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: homepage-service
+                port:
+                  number: 80
+---
+
+# ==========================================
 # 1. AUTH SERVICE INGRESS
 # ==========================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: auth-ingress
-  namespace: eks-namespace
+  name: "auth-ingress"
+  namespace: "eks-namespace"
   annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "5"
@@ -38,10 +72,9 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: flags-ingress
-  namespace: eks-namespace
+  name: "flags-ingress"
+  namespace: "eks-namespace"
   annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "5"
@@ -75,7 +108,6 @@ metadata:
   name: "targeting-ingress"
   namespace: "eks-namespace"
   annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "5"
@@ -110,7 +142,6 @@ metadata:
   name: "evaluation-ingress"
   namespace: "eks-namespace"
   annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "5"
@@ -145,7 +176,6 @@ metadata:
   name: "analytics-ingress"
   namespace: "eks-namespace"
   annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "5"

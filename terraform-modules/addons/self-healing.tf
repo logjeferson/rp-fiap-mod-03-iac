@@ -64,7 +64,7 @@ resource "aws_lambda_function_url" "remediation_webhook" {
   function_name      = aws_lambda_function.remediation_lambda.function_name
   authorization_type = "NONE"
   cors {
-    allow_credentials = true
+    allow_credentials = false 
     allow_origins     = ["*"]
     allow_methods     = ["*"]
     allow_headers     = ["content-type", "date", "keep-alive"]
@@ -74,8 +74,8 @@ resource "aws_lambda_function_url" "remediation_webhook" {
 }
 
 resource "aws_lambda_permission" "public_function_url" {
-  depends_on = [aws_lambda_function_url.remediation_webhook]
-  statement_id           = "AllowPublicInvoke"
+  depends_on             = [aws_lambda_function_url.remediation_webhook]
+  statement_id           = "AllowPublicInvokeUrl"
   action                 = "lambda:InvokeFunctionUrl"
   function_name          = aws_lambda_function.remediation_lambda.function_name
   principal              = "*"

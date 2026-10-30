@@ -226,7 +226,7 @@ jobs:
             --for=condition=ready pod \
             --selector=app.kubernetes.io/component=controller \
             --timeout=180s
-          kubectl apply -f eks-templates/ingress-rules-home.yml
+          kubectl apply -f eks-templates/deployment-service-home.yml
           sleep 3
           kubectl apply -f eks-templates/ingress-rules.yml
           sleep 3
