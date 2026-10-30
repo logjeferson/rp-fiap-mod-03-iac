@@ -39,7 +39,6 @@ resource "helm_release" "kube_prometheus_stack" {
         enabled: true
         ingressClassName: "nginx"
         annotations:
-          cert-manager.io/cluster-issuer: "letsencrypt-prod"
           nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
           nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
         hosts:
@@ -102,7 +101,6 @@ resource "helm_release" "kube_prometheus_stack" {
         enabled: true
         ingressClassName: "nginx"
         annotations:
-          cert-manager.io/cluster-issuer: "letsencrypt-prod"
           nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
           nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
         hosts:
